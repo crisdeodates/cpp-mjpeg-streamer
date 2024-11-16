@@ -20,13 +20,13 @@ int main() {
     // if you want to change the target to graceful shutdown:
     //      streamer.setShutdownTarget("/stop");
 
-    // By default 1 worker is used for streaming
-    // if you want to use 4 workers:
+    // By default std::thread::hardware_concurrency() workers is used for streaming
+    // if you want to use 4 workers instead:
     //      streamer.start(8080, 4);
     streamer.start(8080);
 
     // Visit /shutdown or another defined target to stop the loop and graceful shutdown
-    while (streamer.isAlive()) {
+    while (streamer.isRunning()) {
         cv::Mat frame;
         cap >> frame;
         if (frame.empty()) {
@@ -46,6 +46,8 @@ int main() {
         std::vector<uchar> buff_hsv;
         cv::imencode(".jpg", hsv, buff_hsv, params);
         streamer.publish("/hsv", std::string(buff_hsv.begin(), buff_hsv.end()));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     streamer.stop();

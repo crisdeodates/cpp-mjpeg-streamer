@@ -1,15 +1,17 @@
 ![C++ MJPEG over HTTP Library](https://raw.githubusercontent.com/nadjieb/cpp-mjpeg-streamer/master/doc/images/cpp_mjpeg_streamer.png)
 
-[![Ubuntu](https://github.com/nadjieb/cpp-mjpeg-streamer/workflows/Ubuntu/badge.svg)](https://github.com/nadjieb/cpp-mjpeg-streamer/actions?query=workflow%3AUbuntu)
+[![Ubuntu](https://github.com/nadjieb/cpp-mjpeg-streamer/workflows/ubuntu/badge.svg)](https://github.com/nadjieb/cpp-mjpeg-streamer/actions?query=workflow%3Aubuntu)
 [![macOS](https://github.com/nadjieb/cpp-mjpeg-streamer/workflows/macOS/badge.svg)](https://github.com/nadjieb/cpp-mjpeg-streamer/actions?query=workflow%3AmacOS)
+[![Windows](https://github.com/nadjieb/cpp-mjpeg-streamer/workflows/Windows/badge.svg)](https://github.com/nadjieb/cpp-mjpeg-streamer/actions?query=workflow%3AWindows)
 [![Coverage Status](https://coveralls.io/repos/github/nadjieb/cpp-mjpeg-streamer/badge.svg?branch=master)](https://coveralls.io/github/nadjieb/cpp-mjpeg-streamer?branch=master)
 
 ## Features
-* No OpenCV dependencies (Clear problems separation)
+* No external dependencies (Only using C++ standard libraries)
 * Set different streams depending on HTTP GET path
 * Multi-threaded streaming
 * Single Header-only library
 * Graceful shutdown
+* Suitable for scientists and hobbyists to visualize their computer vision project
 
 ## CMake Integration
 ### External
@@ -42,11 +44,9 @@ target_link_libraries(foo PRIVATE nadjieb_mjpeg_streamer::nadjieb_mjpeg_streamer
 // for convenience
 using MJPEGStreamer = nadjieb::MJPEGStreamer;
 
-int main()
-{
+int main() {
     cv::VideoCapture cap(0);
-    if (!cap.isOpened())
-    {
+    if (!cap.isOpened()) {
         std::cerr << "VideoCapture not opened\n";
         exit(EXIT_FAILURE);
     }
@@ -57,20 +57,18 @@ int main()
 
     // By default "/shutdown" is the target to graceful shutdown the streamer
     // if you want to change the target to graceful shutdown:
-    //      streamer.setShutdownTarget("/stop");
+    //   streamer.setShutdownTarget("/stop");
 
-    // By default 1 worker is used for streaming
-    // if you want to use 4 workers:
-    //      streamer.start(8080, 4);
+    // By default std::thread::hardware_concurrency() workers is used for streaming
+    // if you want to use 4 workers instead:
+    //   streamer.start(8080, 4);
     streamer.start(8080);
 
     // Visit /shutdown or another defined target to stop the loop and graceful shutdown
-    while (streamer.isAlive())
-    {
+    while (streamer.isRunning()) {
         cv::Mat frame;
         cap >> frame;
-        if (frame.empty())
-        {
+        if (frame.empty()) {
             std::cerr << "frame not grabbed\n";
             exit(EXIT_FAILURE);
         }
@@ -87,6 +85,8 @@ int main()
         std::vector<uchar> buff_hsv;
         cv::imencode(".jpg", hsv, buff_hsv, params);
         streamer.publish("/hsv", std::string(buff_hsv.begin(), buff_hsv.end()));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     streamer.stop();
